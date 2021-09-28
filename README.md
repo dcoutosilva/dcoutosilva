@@ -11,7 +11,7 @@
   <img align="center" alt="dcs-CSS" height="30" width="40" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg">
   <img align="center" alt="dcs-Python" height="30" width="40" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg">
   <img align="center" alt="dcs-Csharp" height="30" width="40" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/csharp/csharp-original.svg">
-  <img align="center" alt="dcs-Dart" height="30" width="40" src="https://styles.redditmedia.com/t5_2sut9/styles/communityIcon_f1uukpexwpj11.jpg">
+  <img align="center" alt="dcs-Dart" height="30" width="40" src="https://www.fluttericon.com/logo_dart_192px.svg">
  
 </div>
   <br/>
