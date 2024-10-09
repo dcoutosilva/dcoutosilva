@@ -1,10 +1,19 @@
+#Author: Danilo Couto Silva danilocoutosilva@prof.educacao.sp.gov.br
+#Discribe: Analisa Arquivos CSV do Portal Educação Profissional do Ensino Técnico SEE/SP
+#Version: 2.0
+#License: GPL
+
 # Verificar se os pacotes estão carregados e instalados, se necessário
 pacotesRequisitados <- c("tidyverse", 
                          "tidyr", 
                          "data.table", 
                          "gridExtra", 
                          "grid",
-                         "glue")
+                         "glue",
+                         "downloader",
+                         "httr",
+                         "getPass",
+                         "shiny")
 
 for (p in pacotesRequisitados) {
   if (!require(p, character.only = TRUE)) {
@@ -13,8 +22,120 @@ for (p in pacotesRequisitados) {
   library(p, character.only = TRUE)
 }
 
-data <- glue("~/Downloads/Amilcare/tecnico/Relatórios/2Bimestre/{Sys.Date()}")
+# URL da página de login
+login_url <- "https://educacaoprofissional.educacao.sp.gov.br/login/index.php"
+
+# Interface de usuário
+ui <- fluidPage(
+  titlePanel("Login"),
+  sidebarLayout(
+    sidebarPanel(
+      textInput("username", "Nome de usuário", value = ""),  # Campo para o nome de usuário
+      passwordInput("password", "Senha"),  # Campo para senha, o texto não será exibido
+      actionButton("login_btn", "Login"),  # Botão de login
+      textOutput("login_status")  # Exibe o status do login
+    ),
+    mainPanel(
+      h3("Bem-vindo ao sistema!"),
+      uiOutput("logged_in_ui")  # Interface exibida após login bem-sucedido
+    )
+  )
+)
+
+# Lógica do servidor
+server <- function(input, output, session) {
+  # Variável reativa para armazenar o status do login
+  login_status <- reactiveVal(FALSE)
+  login_message <- reactiveVal("")
+  
+  observeEvent(input$login_btn, {
+    # Obter credenciais do usuário e senha
+    username <- input$username
+    password <- input$password
+    
+    # Verifica se os campos estão preenchidos
+    if (username == "" || password == "") {
+      login_message("Por favor, insira nome de usuário e senha.")
+      return()
+    }
+    
+    # Enviar requisição POST com os dados de login
+    login_response <- tryCatch({
+      POST(
+        login_url,
+        body = list(
+          username = username,  # Nome de usuário inserido
+          password = password   # Senha inserida
+        ),
+        encode = "form"
+      )
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    # Verifica se o login foi bem-sucedido
+    if (!is.null(login_response) && status_code(login_response) == 200) {
+      login_status(TRUE)  # Define o status como logado
+      login_message("Login realizado com sucesso!")
+      print("Login realizado com sucesso!")
+      stopApp()  # Fecha a aplicação shiny após o login 
+    } else {
+      login_status(FALSE)
+      login_message("Login falhou. Verifique suas credenciais.")
+    }
+  })
+  
+  # Exibe o status de login
+  output$login_status <- renderText({
+    login_message()
+  })
+  
+  # Exibe a interface principal apenas se o login f
+  output$logged_in_ui <- renderUI({
+    if (login_status()) {
+      h4(paste("Bem-vindo,", input$username, "!"))
+    }
+  })
+}
+
+# Executa a aplicação Shiny e espera pelo login
+shinyApp(ui = ui, server = server)
+
+# Após fechar o Shiny, o código de download continua
+
+# Diretório para salvar os arquivos
+data <- glue("~/Downloads/amilcare/tecnico/Relatórios/3Bimestre/{Sys.Date()}")
+
+# Verifica se o caminho existe, se não, cria o diretório
+if (!dir.exists(data)){
+  dir.create(data, recursive = TRUE)
+}
 setwd(data)
+
+# Lista de disciplinas
+lista_disciplina_reports <- c(88, # Carreiras
+                              92, # IA
+                              96, # Lógica
+                              100, # Processos
+                              104, # Redes
+                              108) # Versionamento 
+
+# Sessão usada na URL (substitua conforme necessário)
+sesskey <- "F5ttFclsMT"
+
+# Criando loop para baixar os arquivos
+for (i in 1:length(lista_disciplina_reports)) {
+  
+  # Gerando a URL para cada disciplina
+  url <- glue("https://educacaoprofissional.educacao.sp.gov.br/report/progress/index.php?course={lista_disciplina_reports[i]}&activityinclude=all&activityorder=orderincourse&activitysection=-1&sesskey={sesskey}&format=excelcsv")
+  
+  # Nome do arquivo para cada disciplina
+  disciplinas <-lista_disciplina_reports[i]
+  print(url)
+  download.file(url, glue("{lista_disciplina_reports[i].csv}"))
+}
+
+
 
 contador <- 0
 
@@ -66,12 +187,12 @@ processa_arquivo <- function() {
   
   # Nome do arquivo
   arquivo_nome <- switch(basename(arquivo_csv),
-                         "progress.carreira_e_compet__ncias_para_o_mercado_de_trabalho_____2___bimestre___2024_02___sis.csv" = "C ",
-                         "progress.intelig__ncia_artificial_____2___bimestre___2024_02.csv" = "IA",
-                         "progress.l__gica_e_linguagem_de_programa____o_____2___bimestre___2024_02.csv" = "LP",
-                         "progress.processos_de_desenvolvimento_de_software_e_metodologias___geis_____2___bimestre___2024_02.csv" = "P ",
-                         "progress.redes_de_computadores_e_seguran__a_da_informa____o_na_nuvem_____2___bimestre___2024_02.csv" = "R ",
-                         "progress.versionamento_de_c__digo_e_sistemas_de_mensageria_____2___bimestre___2024_02.csv" = "V",
+                         "progress.carreira_e_compet__ncias_para_o_mercado_de_trabalho_____3___bimestre___2024_03___sis.csv" = "Carreiras ",
+                         "progress.intelig__ncia_artificial_____3___bimestre___2024_03.csv" = "IA",
+                         "progress.l__gica_e_linguagem_de_programa____o_____3___bimestre___2024_03.csv" = "Lógica",
+                         "progress.processos_de_desenvolvimento_de_software_e_metodologias___geis_____3___bimestre___2024_03.csv" = "Met Ageis ",
+                         "progress.redes_de_computadores_e_seguran__a_da_informa____o_na_nuvem_____3___bimestre___2024_03.csv" = "Redes ",
+                         "progress.versionamento_de_c__digo_e_sistemas_de_mensageria_____3___bimestre___2024_03.csv" = "Versionamento",
                          basename(arquivo_csv))
   
   list(export_dados = export_dados, arquivo_nome = arquivo_nome, dados_completos = df)
@@ -95,12 +216,24 @@ repeat {
     # Combinar todos os data.frames em um único data.frame
     resultados_combinados <- do.call(cbind, resultados_lista)
     
-    # Adicionar uma coluna com a soma de todas as atividades concluídas para todos os alunos
-    resultados_combinados$total_atividades_concluidas <- rowSums(resultados_combinados[, grepl("total_por_aluno", colnames(resultados_combinados))])  
-    
-    
     # Garantir que todos os nomes de colunas sejam únicos
     colnames(resultados_combinados) <- make.unique(colnames(resultados_combinados))
+    
+    # Adicionar uma coluna com a soma de todas as atividades concluídas para todos os alunos
+    resultados_combinados$total_atividades_concluidas <- rowSums(
+      resultados_combinados[
+        , grepl(
+          "total_por_aluno", colnames(
+            resultados_combinados)
+          )
+        ]
+      )  
+    
+    #Filtrar para remover as linhas onde o total de atividades concluídas é igual a zero.
+    #E ordenação em ordem alfabética
+    resultados_combinados <- resultados_combinados %>% 
+      filter(total_atividades_concluidas > 0) %>% 
+      arrange_at(1)
     
     # Encontrar os 10 alunos com mais atividades concluídas
     top_alunos <- resultados_combinados %>%
@@ -111,7 +244,7 @@ repeat {
     # Encontrar os 10 alunos com menos atividades concluídas
     bottom_alunos <- resultados_combinados %>%
       arrange(total_atividades_concluidas) %>%
-      filter(total_atividades_concluidas > 0 ) %>% 
+      #filter(total_atividades_concluidas > 0 ) %>% 
       select(1, total_atividades_concluidas) %>%
       head(10)
     
@@ -131,44 +264,78 @@ repeat {
     # Adicionar a tabela combinada ao PDF
     gridExtra::grid.table(resultados_combinados)
     
+    # Concatenar as disciplinas em uma string separada por tab"\b"
+    texto_rodape <- paste(titulos_lista, collapse = "\t\t\t\t\t\t\t\t\t")
+    
     # Criar viewport para o rodapé
-    pushViewport(viewport(height = 0.10, width = 1, y = 0.05))
-    grid.text("Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas – 2º Bimestre / Inteligência Artificial – 2º Bimestre 
-              Lógica e Linguagem de Programação – 2º Bimestre /  Processos de Desenvolvimento de Software e Metodologias Ágeis – 2º Bimestre 
-              Redes de Computadores e Segurança da Informação na Nuvem – 2º Bimestre  / Versionamento de Código e Sistemas de Mensageria – 2º Bimestre", 
-              gp = gpar(fontsize = 16))
+    pushViewport(viewport(height = 0.15, width = 1, y = 0.05)) # Ajuste a altura conforme necessário
+    grid.text(texto_rodape, gp = gpar(fontsize = 14), just = "center")
     popViewport()
+    
     
     # Página 2: Top 5 Alunos com mais Atividades Concluídas e 10 Alunos com menos Atividades Concluídas
-    grid.newpage()
+    #grid.newpage()
     
     # Definir layout da página
-    pushViewport(viewport(layout = grid.layout(3, 2)))
+    #pushViewport(viewport(layout = grid.layout(3, 2)))
     
     # Título para os top 5 alunos
-    pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 1))
-    grid.text("Top 10 Alunos com Mais Atividades Concluídas", gp = gpar(fontsize = 16))
-    popViewport()
+    #pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 1))
+    #grid.text("Top 10 Alunos com Mais Atividades Concluídas", gp = gpar(fontsize = 16))
+    #popViewport()
     
     # Tabela dos top 5 alunos
-    pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 1))
-    gridExtra::grid.table(top_alunos)
-    popViewport()
+    #pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 1))
+    #gridExtra::grid.table(top_alunos)
+    #popViewport()
     
     # Título para os 10 alunos com menos atividades
-    pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 2))
-    grid.text("10 Alunos com Menos Atividades Concluídas", gp = gpar(fontsize = 16))
-    popViewport()
+    #pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 2))
+    #grid.text("10 Alunos com Menos Atividades Concluídas", gp = gpar(fontsize = 16))
+    #popViewport()
     
     # Tabela dos 10 alunos com menos atividades
-    pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 2))
-    gridExtra::grid.table(bottom_alunos)
-    popViewport()
+    #pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 2))
+    #gridExtra::grid.table(bottom_alunos)
+    #popViewport()
+    
+    plot_bar <- function(data, title) {
+      media <- mean(resultados_combinados$total_atividades_concluidas)
+      
+      # Criar o gráfico
+      ggplot(data, aes(x = reorder(data[[1]], total_atividades_concluidas), y = total_atividades_concluidas)) +
+        geom_bar(stat = "identity", fill = "steelblue", color = "black", width = 0.7) +
+        geom_hline(yintercept = media, color = "red", linetype = "dashed", size = 1) +
+        geom_text(aes(label = total_atividades_concluidas), vjust = -0.5, color = "black", size = 3.5) +
+        labs(
+          title = title,
+          x = "Aluno",
+          y = "Total de Atividades Concluídas"
+        ) +
+        theme_minimal(base_size = 12) +  # Tema simples e agradável
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Centralizar e destacar o título
+          axis.text.x = element_text(size = 15, angle = 90, hjust = 1),  # Nome do aluno com orientação 90 graus
+          axis.title.x = element_text(size = 12),
+          axis.title.y = element_text(size = 12)
+        )      +
+        annotate("text", x = min(data[[1]]), y = media + (0.05 * max(data$total_atividades_concluidas)), 
+                 label = sprintf("Média: %.1f", media), 
+                 hjust =0, vjust = 0, color = "red", size = 8, fontface = "italic")
+    }
+    
+    #Criar gráficos para os top e bottom alunos
+    plot_top <- plot_bar(top_alunos, "10 Alunos com mais Atividades")
+    plot_bottom <- plot_bar(bottom_alunos, "10 Alunos com menos Atividades")
+    
+    #grid.newpage()
+    grid.arrange(plot_top, plot_bottom, ncol=2)
+    
     # Fecha o dispositivo gráfico
     dev.off()
     
     # Abrir o PDF resultante (apenas no macOS, para outros SOs, use o comando apropriado)
-    system("open RelatórioAVAtecDS-{Sys.Date()}.pdf")
+    system(glue("open {namefile}"))
     
     break
   }

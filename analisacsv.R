@@ -1,5 +1,11 @@
 # Verificar se os pacotes estão carregados e instalados, se necessário
-pacotesRequisitados <- c("tidyverse", "tidyr", "data.table", "gridExtra", "grid")
+pacotesRequisitados <- c("tidyverse", 
+                         "tidyr", 
+                         "data.table", 
+                         "gridExtra", 
+                         "grid",
+                         "glue")
+
 for (p in pacotesRequisitados) {
   if (!require(p, character.only = TRUE)) {
     install.packages(p)
@@ -7,7 +13,9 @@ for (p in pacotesRequisitados) {
   library(p, character.only = TRUE)
 }
 
-setwd("~/Downloads/Amilcare/tecnico/Relatórios/2Bimestre")
+data <- glue("~/Downloads/Amilcare/tecnico/Relatórios/3Bimestre/{Sys.Date()}")
+#setwd(data)
+
 contador <- 0
 
 # Definindo a função que realiza o processo de manipulação e exportação dos dados
@@ -58,12 +66,12 @@ processa_arquivo <- function() {
   
   # Nome do arquivo
   arquivo_nome <- switch(basename(arquivo_csv),
-                         "progress.carreira_e_compet__ncias_para_o_mercado_de_trabalho_____2___bimestre___2024_02___sis.csv" = "C ",
-                         "progress.intelig__ncia_artificial_____2___bimestre___2024_02.csv" = "IA",
-                         "progress.l__gica_e_linguagem_de_programa____o_____2___bimestre___2024_02.csv" = "LP",
-                         "progress.processos_de_desenvolvimento_de_software_e_metodologias___geis_____2___bimestre___2024_02.csv" = "P ",
-                         "progress.redes_de_computadores_e_seguran__a_da_informa____o_na_nuvem_____2___bimestre___2024_02.csv" = "R ",
-                         "progress.versionamento_de_c__digo_e_sistemas_de_mensageria_____2___bimestre___2024_02.csv" = "V",
+                         "progress.carreira_e_compet__ncias_para_o_mercado_de_trabalho_____3___bimestre___2024_03___sis.csv" = "Carreiras ",
+                         "progress.intelig__ncia_artificial_____3___bimestre___2024_03.csv" = "IA",
+                         "progress.l__gica_e_linguagem_de_programa____o_____3___bimestre___2024_03.csv" = "Lógica",
+                         "progress.processos_de_desenvolvimento_de_software_e_metodologias___geis_____3___bimestre___2024_03.csv" = "Met Ageis ",
+                         "progress.redes_de_computadores_e_seguran__a_da_informa____o_na_nuvem_____3___bimestre___2024_03.csv" = "Redes ",
+                         "progress.versionamento_de_c__digo_e_sistemas_de_mensageria_____3___bimestre___2024_03.csv" = "Versionamento",
                          basename(arquivo_csv))
   
   list(export_dados = export_dados, arquivo_nome = arquivo_nome, dados_completos = df)
@@ -89,18 +97,17 @@ repeat {
     
     # Adicionar uma coluna com a soma de todas as atividades concluídas para todos os alunos
     resultados_combinados$total_atividades_concluidas <- rowSums(resultados_combinados[, grepl("total_por_aluno", colnames(resultados_combinados))])  
-    #resultados_combinados$total_atividades_concluidas <-  filter(resultados_combinados$total_atividades_concluidas > 0 ) 
     
     # Garantir que todos os nomes de colunas sejam únicos
     colnames(resultados_combinados) <- make.unique(colnames(resultados_combinados))
     
-    # Encontrar os 5 alunos com mais atividades concluídas
+    # Encontrar os 10 alunos com mais atividades concluídas
     top_alunos <- resultados_combinados %>%
       arrange(desc(total_atividades_concluidas)) %>%
       select(1, total_atividades_concluidas) %>%
-      head(5)
+      head(10)
     
-    # Encontrar os 20 alunos com menos atividades concluídas
+    # Encontrar os 10 alunos com menos atividades concluídas
     bottom_alunos <- resultados_combinados %>%
       arrange(total_atividades_concluidas) %>%
       filter(total_atividades_concluidas > 0 ) %>% 
@@ -108,7 +115,8 @@ repeat {
       head(10)
     
     # Abrir o dispositivo gráfico para o PDF em formato paisagem
-    pdf("test.pdf", height = 15, width = 25, paper = "special", onefile = TRUE)
+    namefile <- glue("RelatórioAVAtecDS-{Sys.Date()}.pdf")
+    pdf(namefile, height = 15, width = 25, paper = "special", onefile = TRUE)
     
     # Página 1: Relatório de Resultados
     # Criar viewport para o título principal
@@ -122,12 +130,12 @@ repeat {
     # Adicionar a tabela combinada ao PDF
     gridExtra::grid.table(resultados_combinados)
     
+    # Concatenar as disciplinas em uma string separada por quebra de linha "\n"
+    texto_rodape <- paste(titulos_lista, collapse = "\t\t\t")
+    
     # Criar viewport para o rodapé
-    pushViewport(viewport(height = 0.10, width = 1, y = 0.05))
-    grid.text("Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas – 2º Bimestre / Inteligência Artificial – 2º Bimestre 
-              Lógica e Linguagem de Programação – 2º Bimestre /  Processos de Desenvolvimento de Software e Metodologias Ágeis – 2º Bimestre 
-              Redes de Computadores e Segurança da Informação na Nuvem – 2º Bimestre  / Versionamento de Código e Sistemas de Mensageria – 2º Bimestre", 
-              gp = gpar(fontsize = 16))
+    pushViewport(viewport(height = 0.15, width = 1, y = 0.05)) # Ajuste a altura conforme necessário
+    grid.text(texto_rodape, gp = gpar(fontsize = 14), just = "left")
     popViewport()
     
     # Página 2: Top 5 Alunos com mais Atividades Concluídas e 10 Alunos com menos Atividades Concluídas
@@ -138,7 +146,7 @@ repeat {
     
     # Título para os top 5 alunos
     pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 1))
-    grid.text("Top 5 Alunos com Mais Atividades Concluídas", gp = gpar(fontsize = 16))
+    grid.text("Top 10 Alunos com Mais Atividades Concluídas", gp = gpar(fontsize = 16))
     popViewport()
     
     # Tabela dos top 5 alunos
@@ -159,7 +167,7 @@ repeat {
     dev.off()
     
     # Abrir o PDF resultante (apenas no macOS, para outros SOs, use o comando apropriado)
-    system("open test.pdf")
+    system(glue("open {namefile}"))
     
     break
   }
