@@ -20,7 +20,7 @@ for (p in pacotes ) {
 }
 
 # URL da planilha Google Sheets
-url <- "https://docs.google.com/spreadsheets/d/1YKiFaWF0GmxgfGP9dUBsPG7Vb5s20-xCGNOEBD9xkYE/edit?resourcekey=&gid=738939517#gid=738939517"
+url <- ""
 
 # Leitura dos dados do formulário
 respostas_formulario <- read_sheet(url)
