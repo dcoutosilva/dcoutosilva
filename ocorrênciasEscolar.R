@@ -1,6 +1,4 @@
-#Leitura de dados atraves do google sheets do formulário de ocorrências
-#para automação de impressão de Ocorrências Escolares
-
+# Carregar pacotes necessários
 pacotes <- c("googlesheets4",
              "dplyr",
              "data.table",
@@ -8,19 +6,17 @@ pacotes <- c("googlesheets4",
              "gridExtra",
              "glue",
              "shiny",
-             "DT"
-             
-             )
+             "DT")
 
-for (p in pacotes ) {
-  if (!require(p, character.only = TRUE)){
+for (p in pacotes) {
+  if (!require(p, character.only = TRUE)) {
     install.packages(p)
   }
   library(p, character.only = TRUE)
 }
 
 # URL da planilha Google Sheets
-url <- ""
+url <- 
 
 # Leitura dos dados do formulário
 respostas_formulario <- read_sheet(url)
@@ -28,7 +24,6 @@ respostas_formulario <- read_sheet(url)
 # UI (interface do usuário)
 ui <- fluidPage(
   titlePanel("Seleção de Ocorrências Escolares para Impressão"),
-  
   sidebarLayout(
     sidebarPanel(
       actionButton("generate_pdf", "Gerar PDF") # Botão para gerar o PDF
@@ -80,17 +75,35 @@ server <- function(input, output, session) {
       ocorrencia <- selected_data[i, ]
       
       # Cria uma nova página no PDF para cada ocorrência
-      plot.new()
-      title(main = glue("Ocorrência {i}"))
+      grid.newpage()
       
-      # Posição inicial para escrever o conteúdo
-      y_pos <- 1 
+      # Título da Ocorrência
+      grid.text( "Ocorrência", 
+        x = 0.5, 
+        y = 0.9, 
+        gp = gpar(
+          fontsize = 16, 
+          fontface = "bold"))
       
-      # Itera pelas colunas para escrever nome e valor
+  
+      y_pos <- 0.8  # Posição vertical inicial
+      
+      # Define a altura de cada linha
+      line_height <- 0.04
+      
+  
       for (j in seq_along(ocorrencia)) {
         nome_coluna <- names(ocorrencia)[j]
         valor <- as.character(ocorrencia[[j]])  # Converte valor para texto
         
+        #TODO Fazer tratamento dos dados 
+        if (nome_coluna == "Carimbo de data/hora") {
+          nome_coluna <- "Data e Hora da Ocorrência"
+         # valor <- as.Date(format("%d-%m-%y:%H:%M:%S"))#ERROR
+        } else if (nome_coluna == "Pontuação"){
+          nome_coluna <- ""
+          valor <- ""
+        }
         # Formata o texto para caber na largura da página
         texto_formatado <- strwrap(glue("{nome_coluna}: {valor}"), width = 80)
         
@@ -98,12 +111,24 @@ server <- function(input, output, session) {
         for (linha in texto_formatado) {
           # Verifica se o texto atinge o limite inferior da página
           if (y_pos < 0.1) {
-            plot.new()   # Cria nova página
-            y_pos <- 1   # Reseta a posição vertical
+            grid.newpage()  # Cria nova página
+            y_pos <- 0.8    # Reseta a posição vertical
           }
           
-          text(0.1, y_pos, labels = linha, adj = 0)
-          y_pos <- y_pos - 0.05  # Ajusta a posição vertical para a próxima linha
+          # Adiciona o texto e uma linha horizontal
+          grid.text(
+            linha, 
+            x = 0.1, 
+            y = y_pos, 
+            just = "left", 
+            gp = gpar(fontsize = 10))
+          y_pos <- y_pos - line_height
+          
+          # Desenha uma linha horizontal abaixo do texto
+          grid.lines(x = c(
+            0.1, 0.9), 
+            y = y_pos + 0.02, 
+            gp = gpar(col = "black"))
         }
       }
     }
