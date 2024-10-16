@@ -3,7 +3,7 @@
 #Version: 2.0
 #License: GPL
 
-# Verificar se os pacotes estão carregados e instalados, se necessário...
+# Verificar se os pacotes estão carregados e instalados, se necessário..
 pacotesRequisitados <- c("tidyverse", 
                          "tidyr", 
                          "data.table", 
@@ -153,14 +153,27 @@ repeat {
     popViewport()
     
     # Adicionar a data
-    grid.text(format(Sys.Date(), "%d-%m-%y"), y = unit(0.93, "npc"), just = "center", gp = gpar(fontsize = 16))
+    grid.text(format(
+      Sys.Date(),
+      "%d-%m-%y"),
+      y = unit(
+        0.93,
+        "npc"), 
+      just = "center",
+      gp = gpar(fontsize = 16))
     
     #Colocar Tema Azul na Grid
     tema_azul <- ttheme_minimal(
-      core=list(bg_params = list(fill = blues9[1:5], col = NA),
+      core=list(bg_params = list(
+        fill = blues9[1:5],
+        col = NA),
                 fg_params = list(fontface=3)),
-      colhead = list(fg_params = list(col="navyblue", fontface = 4L)),
-      rowhead = list(fg_params = list(col = "black", fontface = 3L))
+      colhead = list(fg_params = list(
+        col="navyblue", 
+        fontface = 4L)),
+      rowhead = list(fg_params = list(
+        col = "black", 
+        fontface = 3L))
     )
     #display.brewer.all() 
     # Adicionar a tabela combinada ao PDF
@@ -170,8 +183,13 @@ repeat {
     texto_rodape <- paste(titulos_lista, collapse = "\t\t\t\t\t\t\t\t\t")
     
     # Criar viewport para o rodapé
-    pushViewport(viewport(height = 0.15, width = 1, y = 0.05)) # Ajuste a altura conforme necessário
-    grid.text(texto_rodape, gp = gpar(fontsize = 14), just = "center")
+    pushViewport(viewport
+                 (height = 0.15, 
+                   width = 1, 
+                   y = 0.05)) # Ajuste a altura conforme necessário
+    grid.text(texto_rodape, 
+              gp = gpar(fontsize = 14),
+              just = "center")
     popViewport()
     
     
@@ -204,11 +222,24 @@ repeat {
     plot_bar <- function(data, title) {
       media <- mean(resultados_combinados$total_atividades_concluidas)
       
-      # Criar o gráfico.
-      ggplot(data, aes(x = reorder(data[[1]], total_atividades_concluidas), y = total_atividades_concluidas)) +
-        geom_bar(stat = "identity", fill = "steelblue", color = "black", width = 0.7) +
-        geom_hline(yintercept = media, color = "red", linetype = "dashed", size = 1) +
-        geom_text(aes(label = total_atividades_concluidas), vjust = -0.5, color = "black", size = 3.5) +
+      # Cria o grafico.
+      ggplot(data,
+             aes(x = reorder(data[[1]],
+                             total_atividades_concluidas),
+                 y = total_atividades_concluidas)) +
+        geom_bar(stat = "identity",
+                 fill = "steelblue",
+                 color = "black",
+                 width = 0.7) +
+        geom_hline(yintercept = media,
+                   color = "red",
+                   linetype = "dashed",
+                   size = 1) +
+        geom_text(aes
+                  (label = total_atividades_concluidas),
+                  vjust = -0.5, 
+                  color = "black", 
+                  size = 3.5) +
         labs(
           title = title,
           x = "Aluno",
@@ -216,14 +247,21 @@ repeat {
         ) +
         theme_minimal(base_size = 12) +  # Tema simples e agradável
         theme(
-          plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Centralizar e destacar o título
-          axis.text.x = element_text(size = 15, angle = 90, hjust = 1),  # Nome do aluno com orientação 90 graus
+          plot.title = element_text(hjust = 0.5,
+                                    size = 14, 
+                                    face = "bold"),  # Centralizar e destacar o título
+          axis.text.x = element_text(size = 15,
+                                     angle = 90,
+                                     hjust = 1),  # Nome do aluno com orientação 90 graus
           axis.title.x = element_text(size = 12),
           axis.title.y = element_text(size = 12)
         )      +
-        annotate("text", x = min(data[[1]]), y = media + (0.05 * max(data$total_atividades_concluidas)), 
+        annotate("text", 
+                 x = mean(seq_along(data[[1]])), #seq_along semelhante a enumerate
+                 y = media,#altura de acordo com a media
                  label = sprintf("Média: %.1f", media), 
-                 hjust =0, vjust = 0, color = "red", size = 8, fontface = "italic")
+                 hjust =0.5, vjust = -1, #centraliza a label horinz e vertical
+                 color = "red", size = 8, fontface = "italic")
     }
     
     #Criar gráficos para os top e bottom alunos
@@ -231,7 +269,9 @@ repeat {
     plot_bottom <- plot_bar(bottom_alunos, "10 Alunos com menos Atividades")
     
     #grid.newpage()
-    grid.arrange(plot_top, plot_bottom, ncol=2)
+    grid.arrange(plot_top, 
+                 plot_bottom, 
+                 ncol=2)
     
     # Fecha o dispositivo gráfico
     dev.off()
