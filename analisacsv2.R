@@ -12,18 +12,31 @@ pacotesRequisitados <- c("tidyverse",
                          "glue",
                          "RColorBrewer")
 
+
 for (p in pacotesRequisitados) {
   if (!require(p, character.only = TRUE)) {
-    install.packages(p)
+    install.packages(p, dependencies = TRUE)
   }
   library(p, character.only = TRUE)
 }
 
 #install.packages(grid)
 #library(grid)
+# Pergunta qual turma será impressa o relatório
+serie <- ""
 
-data <- glue("~/Downloads/amilcare/tecnico/Relatórios/4Bimestre/{Sys.Date()}")
+serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3): ")
+if (!serie %in% c("2", "3")) 
+  cat("Por favor, digite apenas 2 ou 3.\n")
 
+
+
+# Define o caminho base conforme a série selecionada
+if (serie == "3") {
+  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/1Bimestre/3A/{Sys.Date()}")  
+} else { 
+  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/1Bimestre/2A/{Sys.Date()}")
+}
 #verifica se o caminho existe, senão existir, ele já cria e seta na pasta.
 
 if (!dir.exists(data)){
@@ -39,29 +52,48 @@ processa_arquivo <- function() {
   arquivo_csv <- file.choose()
   
   # Leitura do arquivo csv
-  dados <- read.csv(arquivo_csv, fileEncoding = 'UTF16', header = TRUE, sep = "\t")
+  dados <- read.csv(arquivo_csv, 
+                    fileEncoding = 'UTF16', 
+                    header = TRUE, 
+                    sep = "\t")#delimitador por tab
   
   # Excluir algumas colunas que não são necessárias
-  dados_limpos <- dados %>% select(-matches(c("X.[0-9]")))
+  dados_limpos <- dados %>%
+    select(-matches(
+      c(
+        "X.[0-9]")
+      )
+      )
   
   # Separar os dados das atividades dos dados de identificação
-  atividades <- dados_limpos %>% select(-1, -2, -3)
+  atividades <- dados_limpos %>% 
+    select(-1, -2, -3)
   
   # Criar uma variável para armazenar apenas os dados de identificação
-  iden <- dados_limpos %>% select(1, 2, 3)
+  iden <- dados_limpos %>% 
+    select(1, 2, 3)
   
   # Dentro de atividades, se estiver concluído será 1, senão é zero
-  atividades <- lapply(atividades, function(x) ifelse(x == "Concluído", 1, 0))
+  atividades <- lapply(
+    atividades, 
+    function(x) ifelse(
+      x == "Concluído", 1, 0))
   
   # Gerando ele como data.frame
   atividades_df <- data.frame(atividades)
   
-  # Criando mais uma coluna para somar todos os concluídos, ou seja todos os 1 por aluno
+  # Criando mais uma coluna para somar todos os concluídos, 
+  #ou seja todos os 1 por aluno
   atividades_df$total_por_aluno <- rowSums(atividades_df)
-  atividades_df$SOMATODAS <- atividades_df$total_por_aluno + atividades_df$total_por_aluno
   
-  # Criando mais uma coluna para mostrar a porcentagem dos alunos que concluíram
-  atividades_df$porc_por_aluno <- (atividades_df$total_por_aluno / length(atividades)) * 100
+  atividades_df$SOMATODAS <- atividades_df$total_por_aluno + 
+    atividades_df$total_por_aluno
+  
+  # Criando mais uma coluna para mostrar 
+  #a porcentagem dos alunos que concluíram
+  atividades_df$porc_por_aluno <- (
+    atividades_df$total_por_aluno / length(
+      atividades)) * 100
   
   # Tornando data.frame
   iden_df <- data.frame(iden)
@@ -74,19 +106,25 @@ processa_arquivo <- function() {
   
   # Dados prontos
   if (contador < 1) {
-    export_dados <- select(df, 1, total_por_aluno, porc_por_aluno)  
+    export_dados <- select(
+      df, 1, total_por_aluno, porc_por_aluno)  
   } else {
-    export_dados <- select(df, total_por_aluno, porc_por_aluno)
+    export_dados <- select(
+      df, total_por_aluno, porc_por_aluno)
   }
   
   # Nome do arquivo
   arquivo_nome <- switch(basename(arquivo_csv),
-                         "progress.carreira_e_compet__ncias_para_o_mercado_de_trabalho_em_desenvolvimento_de_sistemas_____4___bim___2024_04.csv" = "Carreiras ",
-                         "progress.intelig__ncia_artificial_____4___bimestre___2024_04.csv" = "IA",
-                         "progress.l__gica_e_linguagem_de_programa____o_____4___bimestre___2024_04.csv" = "Lógica",
-                         "progress.processos_de_desenvolvimento_de_software_e_metodologias___geis_____4___bimestre___2024_04.csv" = "Met Ageis ",
-                         "progress.redes_de_computadores_e_seguran__a_da_informa____o_na_nuvem_____4___bimestre___2024_04.csv" = "Redes ",
-                         "progress.versionamento_de_c__digo_e_sistemas_de_mensageria_____4___bimestre___2024_04.csv" = "Versionamento",
+                         "progress.sis_2025_1_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
+                         "progress.sis_2025_1_6082_3_51006.csv" = "Programação Mobile",
+                         "progress.sis_2025_1_6082_3_51008.csv" = "Programação Back-End",
+                         "progress.sis_2025_1_6082_3_51009.csv" = "Programação Front-End",
+                         "progress.sis_2025_1_6082_2_51002.csv" = "Redes e Segurança de Computadores",
+                         "progress.sis_2025_1_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
+                         "progress.sis_2025_1_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
+                         "progress.sis_2025_1_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
+                         "progress.sis_2025_1_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
+                         
                          basename(arquivo_csv))
   
   list(export_dados = export_dados, arquivo_nome = arquivo_nome, dados_completos = df)
@@ -129,18 +167,18 @@ repeat {
       filter(total_atividades_concluidas > 0) %>% 
       arrange_at(1)
     
-    # Encontrar os 10 alunos com mais atividades concluídas
+    # Encontrar os 15 alunos com mais atividades concluídas
     top_alunos <- resultados_combinados %>%
       arrange(desc(total_atividades_concluidas)) %>%
-      select(1, total_atividades_concluidas) %>%
-      head(10)
+      select(1, total_atividades_concluidas) 
+      #head(15)
     
-    # Encontrar os 10 alunos com menos atividades concluídas
-    bottom_alunos <- resultados_combinados %>%
-      arrange(total_atividades_concluidas) %>%
+    # Encontrar os 15 alunos com menos atividades concluídas
+    #bottom_alunos <- resultados_combinados %>%
+    #  arrange(total_atividades_concluidas) %>%
       #filter(total_atividades_concluidas > 0 ) %>% 
-      select(1, total_atividades_concluidas) %>%
-      head(10)
+    #  select(1, total_atividades_concluidas) %>%
+    #  head(15)
     
     # Abrir o dispositivo gráfico para o PDF em formato paisagem
     namefile <- glue("RelatórioAVAtecDS-{Sys.Date()}.pdf")
@@ -152,7 +190,7 @@ repeat {
     grid.text("Relatório de Resultados", gp = gpar(fontsize = 16))
     popViewport()
     
-    # Adicionar a data
+    # Adiciona a data centralizada 
     grid.text(format(
       Sys.Date(),
       "%d-%m-%y"),
@@ -180,7 +218,7 @@ repeat {
     gridExtra::grid.table(resultados_combinados, theme = tema_azul)
     
     # Concatenar as disciplinas em uma string separada por quebra de linha "\t"
-    texto_rodape <- paste(titulos_lista, collapse = "\t\t\t\t\t\t\t\t\t")
+    texto_rodape <- paste(titulos_lista, collapse = "\n\t\t\t\t\t\t\t\t")
     
     # Criar viewport para o rodapé
     pushViewport(viewport
@@ -265,13 +303,14 @@ repeat {
     }
     
     #Criar gráficos para os top e bottom alunos
-    plot_top <- plot_bar(top_alunos, "10 Alunos com mais Atividades")
-    plot_bottom <- plot_bar(bottom_alunos, "10 Alunos com menos Atividades")
+    plot_top <- plot_bar(top_alunos, "Quantidade Total / Aluno")
+    #plot_bottom <- plot_bar(bottom_alunos, "15 Alunos com menos Atividades")
     
     #grid.newpage()
-    grid.arrange(plot_top, 
-                 plot_bottom, 
-                 ncol=2)
+    grid.arrange(plot_top 
+                 #plot_bottom, 
+                 #ncol=2
+                 )
     
     # Fecha o dispositivo gráfico
     dev.off()
