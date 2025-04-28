@@ -4,10 +4,10 @@
 #License: GPL
 
 # Verificar se os pacotes estão carregados e instalados, se necessário..
-pacotesRequisitados <- c("tidyverse", 
-                         "tidyr", 
-                         "data.table", 
-                         "gridExtra", 
+pacotesRequisitados <- c("tidyverse",
+                         "tidyr",
+                         "data.table",
+                         "gridExtra",
                          "grid",
                          "glue",
                          "RColorBrewer")
@@ -15,7 +15,7 @@ pacotesRequisitados <- c("tidyverse",
 
 for (p in pacotesRequisitados) {
   if (!require(p, character.only = TRUE)) {
-    install.packages(p, dependencies = TRUE)
+    install.packages(p, repos="https://brieger.esalq.usp.br/CRAN/" ,dependencies = TRUE)
   }
   library(p, character.only = TRUE)
 }
@@ -23,19 +23,22 @@ for (p in pacotesRequisitados) {
 #install.packages(grid)
 #library(grid)
 # Pergunta qual turma será impressa o relatório
+escola <- ""
 serie <- ""
+escola <- readline(prompt = "Qual Escola será impressa o relatório? (amilcare/reginato) : ")
+serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3) : ")
+#if (!serie %in% c("2", "3")) 
+#  cat("Por favor, digite apenas 2 ou 3.\n")
 
-serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3): ")
-if (!serie %in% c("2", "3")) 
-  cat("Por favor, digite apenas 2 ou 3.\n")
-
-
+if (escola =='reginato'){
+  data <- glue("/home/danilo/Downloads/reginato/2025/Relatórios/2Bimestre/2A/{Sys.Date()}")
+} 
 
 # Define o caminho base conforme a série selecionada
-if (serie == "3") {
-  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/1Bimestre/3A/{Sys.Date()}")  
+if ((serie == "3") && (escola == 'amilcare')) {
+  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/2Bimestre/3A/{Sys.Date()}")  
 } else { 
-  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/1Bimestre/2A/{Sys.Date()}")
+  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/2Bimestre/2A/{Sys.Date()}")
 }
 #verifica se o caminho existe, senão existir, ele já cria e seta na pasta.
 
@@ -115,15 +118,15 @@ processa_arquivo <- function() {
   
   # Nome do arquivo
   arquivo_nome <- switch(basename(arquivo_csv),
-                         "progress.sis_2025_1_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
-                         "progress.sis_2025_1_6082_3_51006.csv" = "Programação Mobile",
-                         "progress.sis_2025_1_6082_3_51008.csv" = "Programação Back-End",
-                         "progress.sis_2025_1_6082_3_51009.csv" = "Programação Front-End",
-                         "progress.sis_2025_1_6082_2_51002.csv" = "Redes e Segurança de Computadores",
-                         "progress.sis_2025_1_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
-                         "progress.sis_2025_1_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
-                         "progress.sis_2025_1_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
-                         "progress.sis_2025_1_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
+                         "progress.sis_2025_2_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
+                         "progress.sis_2025_2_6082_3_51006.csv" = "Programação Mobile",
+                         "progress.sis_2025_2_6082_3_51008.csv" = "Programação Back-End",
+                         "progress.sis_2025_2_6082_3_51009.csv" = "Programação Front-End",
+                         "progress.sis_2025_2_6082_2_51002.csv" = "Redes e Segurança de Computadores",
+                         "progress.sis_2025_2_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
+                         "progress.sis_2025_2_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
+                         "progress.sis_2025_2_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
+                         "progress.sis_2025_2_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
                          
                          basename(arquivo_csv))
   
@@ -164,7 +167,7 @@ repeat {
     #Filtrar para remover as linhas onde o total de atividades concluídas é igual a zero.
     #E ordenação em ordem alfabética
     resultados_combinados <- resultados_combinados %>% 
-      filter(total_atividades_concluidas > 0) %>% 
+    #  filter(total_atividades_concluidas > 0) %>% 
       arrange_at(1)
     
     # Encontrar os 15 alunos com mais atividades concluídas
@@ -181,7 +184,12 @@ repeat {
     #  head(15)
     
     # Abrir o dispositivo gráfico para o PDF em formato paisagem
-    namefile <- glue("RelatórioAVAtecDS-{Sys.Date()}.pdf")
+    if (serie == "3"){
+      namefile <- glue("RelatórioAVAtecDS-3A - {Sys.Date()}.pdf")
+    }
+    else {namefile <- glue("RelatórioAVAtecDS-2A - {Sys.Date()}.pdf")}
+      
+    
     pdf(namefile, height = 15, width = 25, paper = "special", onefile = TRUE)
     
     # Página 1: Relatório de Resultados
