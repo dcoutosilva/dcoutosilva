@@ -10,7 +10,9 @@ pacotesRequisitados <- c("tidyverse",
                          "gridExtra",
                          "grid",
                          "glue",
-                         "RColorBrewer")
+                         "RColorBrewer",
+                         "stringr"
+                         )
 
 
 for (p in pacotesRequisitados) {
@@ -23,22 +25,18 @@ for (p in pacotesRequisitados) {
 #install.packages(grid)
 #library(grid)
 # Pergunta qual turma será impressa o relatório
-escola <- ""
+bimestre <- ""
 serie <- ""
-escola <- readline(prompt = "Qual Escola será impressa o relatório? (amilcare/reginato) : ")
+bimestre <- readline(prompt = "Qual Bimestre? :")
 serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3) : ")
 #if (!serie %in% c("2", "3")) 
 #  cat("Por favor, digite apenas 2 ou 3.\n")
 
-if (escola =='reginato'){
-  data <- glue("/home/danilo/Downloads/reginato/2025/Relatórios/2Bimestre/2A/{Sys.Date()}")
-} 
-
 # Define o caminho base conforme a série selecionada
-if ((serie == "3") && (escola == 'amilcare')) {
-  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/2Bimestre/3A/{Sys.Date()}")  
+if (serie == "3") {
+  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/{bimestre}Bimestre/3A/{Sys.Date()}")  
 } else { 
-  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/2Bimestre/2A/{Sys.Date()}")
+  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/{bimestre}Bimestre/2A/{Sys.Date()}")
 }
 #verifica se o caminho existe, senão existir, ele já cria e seta na pasta.
 
@@ -115,22 +113,80 @@ processa_arquivo <- function() {
     export_dados <- select(
       df, total_por_aluno, porc_por_aluno)
   }
+  mapeamento_cursos <- c(
+  "6082_2_51000" = "Lógica e Linguagem de Programação",
+  "6082_3_51006" = "Programação Mobile",
+  "6082_3_51008" = "Programação Back-End",
+  "6082_3_51009" = "Programação Front-End",
+  "6082_2_51002" = "Redes e Segurança de Computadores",
+  "6082_2_51003" = "Processos de Desenvolvimento de Software",
+  "6082_3_51011" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
+  "6082_3_51010" = "Modelagem e Desenvolvimento de Banco de Dados",
+  "6082_2_51005" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
+)
+padrao <- "^progress\\.sis_2025_[1-4]_(6082_[23]_\\d{5})\\.csv$"
+codigo_curso <- str_replace(basename(arquivo_csv), padrao, "\\1")
+arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
+                       mapeamento_cursos[codigo_curso],
+                       basename(arquivo_csv))
+list(export_dados = export_dados, arquivo_nome = unname(arquivo_nome), dados_completos = df)
+
+
+# prefixo_a_remover <- paste0("progress.sis_2025_", bimestre, "_"),
+#  nome_base_arquivo <- basename(arquivo_csv),
+#   codigo_disciplina <- gsub(".csv$", "", gsub(prefixo_a_remover, "", nome_base_arquivo, fixed = TRUE)),
+#    arquivo_csv <- unname(cursos_base[[codigo_disciplina]]),
+
+# # Nome do arquivo
+# arquivo_nome <- switch(basename(arquivo_csv), 
+                    
+                        
+ #                       "progress.sis_2025_{bimestre}_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
+  #                      "progress.sis_2025_{bimestre}_6082_3_51006.csv" = "Programação Mobile",
+   #                     "progress.sis_2025_{bimestre}_6082_3_51008.csv" = "Programação Back-End",
+    #                  "progress.sis_2025_{bimestre}_6082_3_51009.csv" = "Programação Front-End",
+     #                 "progress.sis_2025_{bimestre}_6082_2_51002.csv" = "Redes e Segurança de Computadores",
+      #                "progress.sis_2025_{bimestre}_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
+       #               "progress.sis_2025_{bimestre}_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
+        #               "progress.sis_2025_{bimestre}_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
+         #               "progress.sis_2025_{bimestre}_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
+          #               "progress.sis_2025_2_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
+           #             "progress.sis_2025_2_6082_3_51006.csv" = "Programação Mobile",
+            #            "progress.sis_2025_2_6082_3_51008.csv" = "Programação Back-End",
+             #          "progress.sis_2025_2_6082_3_51009.csv" = "Programação Front-End",
+              #         "progress.sis_2025_2_6082_2_51002.csv" = "Redes e Segurança de Computadores",
+               #        "progress.sis_2025_2_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
+                #       "progress.sis_2025_2_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
+                 #   "progress.sis_2025_2_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
+#                       "progress.sis_2025_2_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
+ #                     "progress.sis_2025_3_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
+  #                  "progress.sis_2025_3_6082_3_51006.csv" = "Programação Mobile",
+   #                   "progress.sis_2025_3_6082_3_51008.csv" = "Programação Back-End",
+    #                  "progress.sis_2025_3_6082_3_51009.csv" = "Programação Front-End",
+     #                 "progress.sis_2025_3_6082_2_51002.csv" = "Redes e Segurança de Computadores",
+      #                "progress.sis_2025_3_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
+       #               "progress.sis_2025_3_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
+        #              "progress.sis_2025_3_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
+         #             "progress.sis_2025_3_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
+          #            "progress.sis_2025_4_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
+           #           "progress.sis_2025_4_6082_3_51006.csv" = "Programação Mobile",
+            #          "progress.sis_2025_4_6082_3_51008.csv" = "Programação Back-End",
+             #         "progress.sis_2025_4_6082_3_51009.csv" = "Programação Front-End",
+              #        "progress.sis_2025_4_6082_2_51002.csv" = "Redes e Segurança de Computadores",
+               #       "progress.sis_2025_4_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
+                #      "progress.sis_2025_4_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
+                 #     "progress.sis_2025_4_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
+                  #   "progress.sis_2025_4_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
+                   #      basename(arquivo_csv))
   
-  # Nome do arquivo
-  arquivo_nome <- switch(basename(arquivo_csv),
-                         "progress.sis_2025_2_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
-                         "progress.sis_2025_2_6082_3_51006.csv" = "Programação Mobile",
-                         "progress.sis_2025_2_6082_3_51008.csv" = "Programação Back-End",
-                         "progress.sis_2025_2_6082_3_51009.csv" = "Programação Front-End",
-                         "progress.sis_2025_2_6082_2_51002.csv" = "Redes e Segurança de Computadores",
-                         "progress.sis_2025_2_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
-                         "progress.sis_2025_2_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
-                         "progress.sis_2025_2_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
-                         "progress.sis_2025_2_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
-                         
-                         basename(arquivo_csv))
-  
-  list(export_dados = export_dados, arquivo_nome = arquivo_nome, dados_completos = df)
+  #TODO 
+  # padrao <- "^progress\\.sis_2025_[1-4]_6082_[23]_(\\d{5})\\.csv$"
+  # codigo_curso <- str_replace(basename(arquivo_csv), padrao, "\\1")
+  # 
+  # arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
+  #                        mapeamento_cursos[codigo_curso],
+  #                        basename(arquivo_csv))  
+  #list(export_dados = export_dados, arquivo_nome = arquivo_nome, dados_completos = df)
 }
 
 # Inicializar uma lista para armazenar os resultados e os nomes dos arquivos
@@ -187,7 +243,9 @@ repeat {
     if (serie == "3"){
       namefile <- glue("RelatórioAVAtecDS-3A - {Sys.Date()}.pdf")
     }
-    else {namefile <- glue("RelatórioAVAtecDS-2A - {Sys.Date()}.pdf")}
+    else {
+      namefile <- glue("RelatórioAVAtecDS-2A - {Sys.Date()}.pdf")
+      }
       
     
     pdf(namefile, height = 15, width = 25, paper = "special", onefile = TRUE)
@@ -223,7 +281,8 @@ repeat {
     )
     #display.brewer.all() 
     # Adicionar a tabela combinada ao PDF
-    gridExtra::grid.table(resultados_combinados, theme = tema_azul)
+    #gridExtra::
+      grid.table(resultados_combinados, theme = tema_azul)
     
     # Concatenar as disciplinas em uma string separada por quebra de linha "\t"
     texto_rodape <- paste(titulos_lista, collapse = "\n\t\t\t\t\t\t\t\t")
