@@ -22,15 +22,13 @@ for (p in pacotesRequisitados) {
   library(p, character.only = TRUE)
 }
 
-#install.packages(grid)
-#library(grid)
+
 # Pergunta qual turma será impressa o relatório
 bimestre <- ""
 serie <- ""
 bimestre <- readline(prompt = "Qual Bimestre? :")
 serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3) : ")
-#if (!serie %in% c("2", "3")) 
-#  cat("Por favor, digite apenas 2 ou 3.\n")
+
 
 # Define o caminho base conforme a série selecionada
 if (serie == "3") {
@@ -131,62 +129,6 @@ arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
                        basename(arquivo_csv))
 list(export_dados = export_dados, arquivo_nome = unname(arquivo_nome), dados_completos = df)
 
-
-# prefixo_a_remover <- paste0("progress.sis_2025_", bimestre, "_"),
-#  nome_base_arquivo <- basename(arquivo_csv),
-#   codigo_disciplina <- gsub(".csv$", "", gsub(prefixo_a_remover, "", nome_base_arquivo, fixed = TRUE)),
-#    arquivo_csv <- unname(cursos_base[[codigo_disciplina]]),
-
-# # Nome do arquivo
-# arquivo_nome <- switch(basename(arquivo_csv), 
-                    
-                        
- #                       "progress.sis_2025_{bimestre}_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
-  #                      "progress.sis_2025_{bimestre}_6082_3_51006.csv" = "Programação Mobile",
-   #                     "progress.sis_2025_{bimestre}_6082_3_51008.csv" = "Programação Back-End",
-    #                  "progress.sis_2025_{bimestre}_6082_3_51009.csv" = "Programação Front-End",
-     #                 "progress.sis_2025_{bimestre}_6082_2_51002.csv" = "Redes e Segurança de Computadores",
-      #                "progress.sis_2025_{bimestre}_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
-       #               "progress.sis_2025_{bimestre}_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
-        #               "progress.sis_2025_{bimestre}_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
-         #               "progress.sis_2025_{bimestre}_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
-          #               "progress.sis_2025_2_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
-           #             "progress.sis_2025_2_6082_3_51006.csv" = "Programação Mobile",
-            #            "progress.sis_2025_2_6082_3_51008.csv" = "Programação Back-End",
-             #          "progress.sis_2025_2_6082_3_51009.csv" = "Programação Front-End",
-              #         "progress.sis_2025_2_6082_2_51002.csv" = "Redes e Segurança de Computadores",
-               #        "progress.sis_2025_2_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
-                #       "progress.sis_2025_2_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
-                 #   "progress.sis_2025_2_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
-#                       "progress.sis_2025_2_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
- #                     "progress.sis_2025_3_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
-  #                  "progress.sis_2025_3_6082_3_51006.csv" = "Programação Mobile",
-   #                   "progress.sis_2025_3_6082_3_51008.csv" = "Programação Back-End",
-    #                  "progress.sis_2025_3_6082_3_51009.csv" = "Programação Front-End",
-     #                 "progress.sis_2025_3_6082_2_51002.csv" = "Redes e Segurança de Computadores",
-      #                "progress.sis_2025_3_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
-       #               "progress.sis_2025_3_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
-        #              "progress.sis_2025_3_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
-         #             "progress.sis_2025_3_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
-          #            "progress.sis_2025_4_6082_2_51000.csv" = "Lógica e Linguagem de Programação",
-           #           "progress.sis_2025_4_6082_3_51006.csv" = "Programação Mobile",
-            #          "progress.sis_2025_4_6082_3_51008.csv" = "Programação Back-End",
-             #         "progress.sis_2025_4_6082_3_51009.csv" = "Programação Front-End",
-              #        "progress.sis_2025_4_6082_2_51002.csv" = "Redes e Segurança de Computadores",
-               #       "progress.sis_2025_4_6082_2_51003.csv" = "Processos de Desenvolvimento de Software",
-                #      "progress.sis_2025_4_6082_3_51011.csv" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
-                 #     "progress.sis_2025_4_6082_3_51010.csv" = "Modelagem e Desenvolvimento de Banco de Dados",
-                  #   "progress.sis_2025_4_6082_2_51005.csv" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas",
-                   #      basename(arquivo_csv))
-  
-  #TODO 
-  # padrao <- "^progress\\.sis_2025_[1-4]_6082_[23]_(\\d{5})\\.csv$"
-  # codigo_curso <- str_replace(basename(arquivo_csv), padrao, "\\1")
-  # 
-  # arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
-  #                        mapeamento_cursos[codigo_curso],
-  #                        basename(arquivo_csv))  
-  #list(export_dados = export_dados, arquivo_nome = arquivo_nome, dados_completos = df)
 }
 
 # Inicializar uma lista para armazenar os resultados e os nomes dos arquivos
@@ -231,13 +173,6 @@ repeat {
       arrange(desc(total_atividades_concluidas)) %>%
       select(1, total_atividades_concluidas) 
       #head(15)
-    
-    # Encontrar os 15 alunos com menos atividades concluídas
-    #bottom_alunos <- resultados_combinados %>%
-    #  arrange(total_atividades_concluidas) %>%
-      #filter(total_atividades_concluidas > 0 ) %>% 
-    #  select(1, total_atividades_concluidas) %>%
-    #  head(15)
     
     # Abrir o dispositivo gráfico para o PDF em formato paisagem
     if (serie == "3"){
@@ -296,33 +231,6 @@ repeat {
               gp = gpar(fontsize = 14),
               just = "center")
     popViewport()
-    
-    
-    # Página 2: Top 5 Alunos com mais Atividades Concluídas e 10 Alunos com menos Atividades Concluídas
-    #grid.newpage()
-    
-    # Definir layout da página
-    #pushViewport(viewport(layout = grid.layout(3, 2)))
-    
-    # Título para os top 5 alunos
-    #pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 1))
-    #grid.text("Top 10 Alunos com Mais Atividades Concluídas", gp = gpar(fontsize = 16))
-    #popViewport()
-    
-    # Tabela dos top 5 alunos
-    #pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 1))
-    #gridExtra::grid.table(top_alunos)
-    #popViewport()
-    
-    # Título para os 10 alunos com menos atividades
-    #pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 2))
-    #grid.text("10 Alunos com Menos Atividades Concluídas", gp = gpar(fontsize = 16))
-    #popViewport()
-    
-    # Tabela dos 10 alunos com menos atividades
-    #pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 2))
-    #gridExtra::grid.table(bottom_alunos)
-    #popViewport()
     
     plot_bar <- function(data, title) {
       media <- mean(resultados_combinados$total_atividades_concluidas)
