@@ -4,14 +4,15 @@
 #License: GPL
 
 # Verificar se os pacotes estão carregados e instalados, se necessário..
-pacotesRequisitados <- c("tidyverse",
-                         "tidyr",
-                         "data.table",
-                         "gridExtra",
-                         "grid",
-                         "glue",
-                         "RColorBrewer",
-                         "stringr"
+pacotesRequisitados <- c("tidyverse"
+                         ,"tidyr"
+                         ,"data.table"
+                         ,"gridExtra"
+                         ,"grid"
+                         ,"glue"
+                         ,"RColorBrewer"
+                         ,"stringr"
+                         ,"openxlsx"
                          )
 
 
@@ -22,20 +23,18 @@ for (p in pacotesRequisitados) {
   library(p, character.only = TRUE)
 }
 
-
-# Pergunta qual turma será impressa o relatório
-bimestre <- ""
-serie <- ""
-bimestre <- readline(prompt = "Qual Bimestre? :")
+ano_atual <- format(Sys.Date(), "%Y")
+# --- Configurações Iniciais ---
+bimestre <- readline(prompt = "Qual Bimestre? : ")
 serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3) : ")
-
 
 # Define o caminho base conforme a série selecionada
 if (serie == "3") {
-  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/{bimestre}Bimestre/3A/{Sys.Date()}")  
+  data <- glue("/home/danilo/Downloads/amilcare/{ano_atual}/relatorios/{bimestre}Bimestre/3A/{Sys.Date()}")  
 } else { 
-  data <- glue("/home/danilo/Downloads/amilcare/2025/Relatórios/{bimestre}Bimestre/2A/{Sys.Date()}")
+  data <- glue("/home/danilo/Downloads/amilcare/{ano_atual}/relatorios/{bimestre}Bimestre/2B/{Sys.Date()}")
 }
+print(data)
 #verifica se o caminho existe, senão existir, ele já cria e seta na pasta.
 
 if (!dir.exists(data)){
@@ -121,8 +120,8 @@ processa_arquivo <- function() {
   "6082_3_51011" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
   "6082_3_51010" = "Modelagem e Desenvolvimento de Banco de Dados",
   "6082_2_51005" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
-)
-padrao <- "^progress\\.sis_2025_[1-4]_(6082_[23]_\\d{5})\\.csv$"
+)#TODO ARRUMAR O MAPEAMENTO DOS CURSOS
+padrao <- glue("^progress\\.sis_{ano_atual}_[1-4]_(6082_[23]_\\d{5})\\.csv$")
 codigo_curso <- str_replace(basename(arquivo_csv), padrao, "\\1")
 arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
                        mapeamento_cursos[codigo_curso],
@@ -175,15 +174,12 @@ repeat {
       #head(15)
     
     # Abrir o dispositivo gráfico para o PDF em formato paisagem
-    if (serie == "3"){
-      namefile <- glue("RelatórioAVAtecDS-3A - {Sys.Date()}.pdf")
-    }
-    else {
-      namefile <- glue("RelatórioAVAtecDS-2A - {Sys.Date()}.pdf")
-      }
+    base_name <- ifelse(serie == "3", "RelatórioAVAtecDS-3A", "RelatórioAVAtecDS-2B")
+    namefile_pdf <- glue("{base_name} - {Sys.Date()}.pdf")
+    namefile_xlsx <- glue("{base_name} - {Sys.Date()}.xlsx")
       
     
-    pdf(namefile, height = 15, width = 25, paper = "special", onefile = TRUE)
+    pdf(namefile_pdf, height = 15, width = 25, paper = "special", onefile = TRUE)
     
     # Página 1: Relatório de Resultados
     # Criar viewport para o título principal
@@ -218,6 +214,7 @@ repeat {
     # Adicionar a tabela combinada ao PDF
     #gridExtra::
       grid.table(resultados_combinados, theme = tema_azul)
+      write.xlsx(resultados_combinados, file = namefile_xlsx, asTable = TRUE, overwrite = TRUE)
     
     # Concatenar as disciplinas em uma string separada por quebra de linha "\t"
     texto_rodape <- paste(titulos_lista, collapse = "\n\t\t\t\t\t\t\t\t")
@@ -290,8 +287,8 @@ repeat {
     # Fecha o dispositivo gráfico
     dev.off()
     
-    # Abrir o PDF
-    system(glue("open {namefile}"))
+    system(glue("open '{namefile_pdf}'"))
+    system(glue("open '{namefile_xlsx}'"))
     
     break
   }
