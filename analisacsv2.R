@@ -13,7 +13,7 @@ pacotesRequisitados <- c("tidyverse"
                          ,"RColorBrewer"
                          ,"stringr"
                          ,"openxlsx"
-                         )
+)
 
 
 for (p in pacotesRequisitados) {
@@ -60,8 +60,8 @@ processa_arquivo <- function() {
     select(-matches(
       c(
         "X.[0-9]")
-      )
-      )
+    )
+    )
   
   # Separar os dados das atividades dos dados de identificação
   atividades <- dados_limpos %>% 
@@ -89,10 +89,10 @@ processa_arquivo <- function() {
   
   # Criando mais uma coluna para mostrar 
   #a porcentagem dos alunos que concluíram
-  atividades_df$porc_por_aluno <- (
-    atividades_df$total_por_aluno / length(
-      atividades)) * 100
-  
+#  atividades_df$porc_por_aluno <- (
+#    atividades_df$total_por_aluno / length(
+#      atividades)) * 100
+  atividades_df$porc_por_aluno <- glue("{round((atividades_df$total_por_aluno / length(atividades)) * 100, 1)}%")  
   # Tornando data.frame
   iden_df <- data.frame(iden)
   
@@ -111,23 +111,24 @@ processa_arquivo <- function() {
       df, total_por_aluno, porc_por_aluno)
   }
   mapeamento_cursos <- c(
-  "6082_2_51000" = "Lógica e Linguagem de Programação",
-  "6082_3_51006" = "Programação Mobile",
-  "6082_3_51008" = "Programação Back-End",
-  "6082_3_51009" = "Programação Front-End",
-  "6082_2_51002" = "Redes e Segurança de Computadores",
-  "6082_2_51003" = "Processos de Desenvolvimento de Software",
-  "6082_3_51011" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas",
-  "6082_3_51010" = "Modelagem e Desenvolvimento de Banco de Dados",
-  "6082_2_51005" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
-)#TODO ARRUMAR O MAPEAMENTO DOS CURSOS
-padrao <- glue("^progress\\.sis_{ano_atual}_[1-4]_(6082_[23]_\\d{5})\\.csv$")
-codigo_curso <- str_replace(basename(arquivo_csv), padrao, "\\1")
-arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
-                       mapeamento_cursos[codigo_curso],
-                       basename(arquivo_csv))
-list(export_dados = export_dados, arquivo_nome = unname(arquivo_nome), dados_completos = df)
-
+    "6082_2_51000" = "Lógica e Linguagem de Programação"
+    ,"6082_3_51006" = "Programação Mobile"
+    ,"6082_3_51008" = "Programação Back-End"
+    ,"6082_3_51009" = "Programação Front-End"
+    ,"6082_2_51002" = "Redes e Segurança de Computadores"
+    ,"6082_2_51003" = "Processos de Desenvolvimento de Software"
+    ,"6082_3_51011" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas"
+    ,"6082_3_51010" = "Modelagem e Desenvolvimento de Banco de Dados"
+    #,"6082_2_51005" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
+    ,"6082_2_9929" =  "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
+  )#TODO ARRUMAR O MAPEAMENTO DOS CURSOS
+  padrao <- glue("progress.sis_{ano_atual}_[1-4]_(6082_[23]_\\d{5})\\.csv")
+  codigo_curso <- str_replace(basename(arquivo_csv), padrao, "\\1")
+  arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
+                         mapeamento_cursos[codigo_curso],
+                         basename(arquivo_csv))
+  list(export_dados = export_dados, arquivo_nome = unname(arquivo_nome), dados_completos = df)
+  
 }
 
 # Inicializar uma lista para armazenar os resultados e os nomes dos arquivos
@@ -157,27 +158,27 @@ repeat {
         , grepl(
           "total_por_aluno", colnames(
             resultados_combinados)
-          )
-        ]
-      )  
+        )
+      ]
+    )  
     
     #Filtrar para remover as linhas onde o total de atividades concluídas é igual a zero.
     #E ordenação em ordem alfabética
     resultados_combinados <- resultados_combinados %>% 
-    #  filter(total_atividades_concluidas > 0) %>% 
+      #  filter(total_atividades_concluidas > 0) %>% 
       arrange_at(1)
     
     # Encontrar os 15 alunos com mais atividades concluídas
     top_alunos <- resultados_combinados %>%
       arrange(desc(total_atividades_concluidas)) %>%
       select(1, total_atividades_concluidas) 
-      #head(15)
+    #head(15)
     
     # Abrir o dispositivo gráfico para o PDF em formato paisagem
     base_name <- ifelse(serie == "3", "RelatórioAVAtecDS-3A", "RelatórioAVAtecDS-2B")
     namefile_pdf <- glue("{base_name} - {Sys.Date()}.pdf")
     namefile_xlsx <- glue("{base_name} - {Sys.Date()}.xlsx")
-      
+    
     
     pdf(namefile_pdf, height = 15, width = 25, paper = "special", onefile = TRUE)
     
@@ -202,7 +203,7 @@ repeat {
       core=list(bg_params = list(
         fill = blues9[1:5],
         col = NA),
-                fg_params = list(fontface=3)),
+        fg_params = list(fontface=3)),
       colhead = list(fg_params = list(
         col="navyblue", 
         fontface = 4L)),
@@ -213,8 +214,8 @@ repeat {
     #display.brewer.all() 
     # Adicionar a tabela combinada ao PDF
     #gridExtra::
-      grid.table(resultados_combinados, theme = tema_azul)
-      write.xlsx(resultados_combinados, file = namefile_xlsx, asTable = TRUE, overwrite = TRUE)
+    grid.table(resultados_combinados, theme = tema_azul)
+    write.xlsx(resultados_combinados, file = namefile_xlsx, asTable = TRUE, overwrite = TRUE)
     
     # Concatenar as disciplinas em uma string separada por quebra de linha "\t"
     texto_rodape <- paste(titulos_lista, collapse = "\n\t\t\t\t\t\t\t\t")
@@ -282,7 +283,7 @@ repeat {
     grid.arrange(plot_top 
                  #plot_bottom, 
                  #ncol=2
-                 )
+    )
     
     # Fecha o dispositivo gráfico
     dev.off()
