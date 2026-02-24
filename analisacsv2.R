@@ -13,7 +13,8 @@ pacotesRequisitados <- c("tidyverse"
                          ,"RColorBrewer"
                          ,"stringr"
                          ,"openxlsx"
-)
+                         ,"png"
+                      )
 
 
 for (p in pacotesRequisitados) {
@@ -31,8 +32,10 @@ serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3) : ")
 # Define o caminho base conforme a série selecionada
 if (serie == "3") {
   data <- glue("/home/danilo/Downloads/amilcare/{ano_atual}/relatorios/{bimestre}Bimestre/3A/{Sys.Date()}")  
+  serie_nomenclatura <- "3A"
 } else { 
   data <- glue("/home/danilo/Downloads/amilcare/{ano_atual}/relatorios/{bimestre}Bimestre/2B/{Sys.Date()}")
+  serie_nomenclatura <- "2B"
 }
 print(data)
 #verifica se o caminho existe, senão existir, ele já cria e seta na pasta.
@@ -43,6 +46,7 @@ if (!dir.exists(data)){
 
 setwd(data)
 contador <- 0
+
 
 # Definindo a função que realiza o processo de manipulação e exportação dos dados
 processa_arquivo <- function() {
@@ -82,7 +86,7 @@ processa_arquivo <- function() {
   
   # Criando mais uma coluna para somar todos os concluídos, 
   #ou seja todos os 1 por aluno
-  atividades_df$total_por_aluno <- rowSums(atividades_df)
+  atividades_df$total_por_aluno <- rowSums(atividades_df, na.rm = TRUE)
   
   atividades_df$SOMATODAS <- atividades_df$total_por_aluno + 
     atividades_df$total_por_aluno
@@ -111,24 +115,34 @@ processa_arquivo <- function() {
       df, total_por_aluno, porc_por_aluno)
   }
   mapeamento_cursos <- c(
-    "6082_2_51000" = "Lógica e Linguagem de Programação"
-    ,"6082_3_51006" = "Programação Mobile"
-    ,"6082_3_51008" = "Programação Back-End"
-    ,"6082_3_51009" = "Programação Front-End"
-    ,"6082_2_51002" = "Redes e Segurança de Computadores"
-    ,"6082_2_51003" = "Processos de Desenvolvimento de Software"
-    ,"6082_3_51011" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas"
-    ,"6082_3_51010" = "Modelagem e Desenvolvimento de Banco de Dados"
-    #,"6082_2_51005" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
-    ,"6082_2_9929" =  "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
+    "2_51000" = "Lógica e Linguagem de Programação"
+    ,"3_51006" = "Programação Mobile"
+    ,"3_51008" = "Programação Back-End"
+    ,"3_51009" = "Programação Front-End"
+    ,"2_51002" = "Redes e Segurança de Computadores"
+    ,"2_51003" = "Processos de Desenvolvimento de Software"
+    ,"3_51011" = "Projeto Multidisciplinar em Desenvolvimento de Sistemas"
+    ,"3_51010" = "Modelagem e Desenvolvimento de Banco de Dados"
+    #,"2_51005" = "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
+    ,"2_9929" =  "Carreira e Competências para o Mercado de Trabalho em Desenvolvimento de Sistemas"
+    ,"3_51004" = "Inteligência Artificial"
+    ,"3_51001" = "Versionamento de Código e Sistemas de Mensageria"
   )#TODO ARRUMAR O MAPEAMENTO DOS CURSOS
-  padrao <- glue("progress.sis_{ano_atual}_[1-4]_(6082_[23]_\\d{5})\\.csv")
-  codigo_curso <- str_replace(basename(arquivo_csv), padrao, "\\1")
-  arquivo_nome <- ifelse(codigo_curso %in% names(mapeamento_cursos),
-                         mapeamento_cursos[codigo_curso],
-                         basename(arquivo_csv))
-  list(export_dados = export_dados, arquivo_nome = unname(arquivo_nome), dados_completos = df)
+  nome_base <- basename(arquivo_csv)
   
+  # 2. Extrair o código final (ex: 2_51000) usando expressão regular
+  # Este padrão busca especificamente o final do nome do arquivo antes do .csv
+  codigo_extraido <- str_extract(nome_base, "[23]_\\d{4,5}(?=\\.csv)")
+  
+  # 3. Verificar se o código existe no seu mapeamento
+  arquivo_nome <- if (!is.na(codigo_extraido) && codigo_extraido %in% names(mapeamento_cursos)) {
+    mapeamento_cursos[codigo_extraido]
+  } else {
+    nome_base # Caso não encontre, mantém o nome original para não ficar vazio
+  }
+  
+  # Retornar o resultado sem o atributo de nome do vetor
+  list(export_dados = export_dados, arquivo_nome = unname(arquivo_nome), dados_completos = df)  
 }
 
 # Inicializar uma lista para armazenar os resultados e os nomes dos arquivos
@@ -185,7 +199,20 @@ repeat {
     # Página 1: Relatório de Resultados
     # Criar viewport para o título principal
     pushViewport(viewport(height = 0.1, width = 1, just = "center", y = 0.95))
-    grid.text("Relatório de Resultados", gp = gpar(fontsize = 16))
+    grid.text(glue("Relatório de Resultados - Turma {serie_nomenclatura}"), 
+              gp = gpar(fontsize = 16, fontface = "bold"))    
+    popViewport()
+    
+    img <- readPNG("/home/danilo/Downloads/amilcare/picture.png")
+    g_img <- rasterGrob(img, interpolate = TRUE)
+    # Viewport para a Imagem (Canto Superior Direito)
+    # Aumentamos o width/height para 5cm para manter a imagem grande
+    pushViewport(viewport(x = unit(0.88, "npc"), 
+                          y = unit(0.92, "npc"), 
+                          width = unit(5, "cm"), 
+                          height = unit(5, "cm"),
+                          just = c("left", "top"))) # Alinhamento preciso
+    grid.draw(g_img)
     popViewport()
     
     # Adiciona a data centralizada 
@@ -198,23 +225,44 @@ repeat {
       just = "center",
       gp = gpar(fontsize = 16))
     
-    #Colocar Tema Azul na Grid
-    tema_azul <- ttheme_minimal(
-      core=list(bg_params = list(
-        fill = blues9[1:5],
-        col = NA),
-        fg_params = list(fontface=3)),
-      colhead = list(fg_params = list(
-        col="navyblue", 
-        fontface = 4L)),
-      rowhead = list(fg_params = list(
-        col = "black", 
-        fontface = 3L))
+    # --- Ajuste Dinâmico da Tabela (Página 1) ---
+    
+    # 1. Definir larguras e tema base para medição
+    largura_maxima_polegadas <- 23 
+    tema_base <- ttheme_minimal(
+      core = list(bg_params = list(fill = blues9[1:5], col = NA), fg_params = list(fontface = 3, fontsize = 9)),
+      colhead = list(fg_params = list(col = "navyblue", fontface = 4L, fontsize = 10)),
+      rowhead = list(fg_params = list(col = "black", fontface = 3L, fontsize = 9))
     )
-    #display.brewer.all() 
-    # Adicionar a tabela combinada ao PDF
-    #gridExtra::
-    grid.table(resultados_combinados, theme = tema_azul)
+    
+    # 2. Criar tabela temporária para medir a largura real
+    tabela_teste <- tableGrob(resultados_combinados, theme = tema_base)
+    largura_atual <- convertWidth(sum(tabela_teste$widths), "inches", valueOnly = TRUE)
+    
+    # 3. Agora calculamos a escala baseada na medição real
+    escala <- if (largura_atual > largura_maxima_polegadas) largura_maxima_polegadas / largura_atual else 1
+    
+    # 4. Criar o tema FINAL com a fonte escalada corretamente
+    tema_final <- ttheme_minimal(
+      core = list(
+        bg_params = list(fill = blues9[1:5], col = NA),
+        fg_params = list(fontface = 3, fontsize = 9 * escala)
+      ),
+      colhead = list(
+        fg_params = list(col = "navyblue", fontface = 4L, fontsize = 10 * escala)
+      ),
+      rowhead = list(
+        fg_params = list(col = "black", fontface = 3L, fontsize = 9 * escala)
+      )
+    )
+    
+    # 5. Gerar e desenhar a tabela definitiva
+    tabela_final <- tableGrob(resultados_combinados, theme = tema_final)
+    
+    pushViewport(viewport(y = 0.5, height = 0.8, width = 0.95))
+    grid.draw(tabela_final)
+    popViewport()
+    
     write.xlsx(resultados_combinados, file = namefile_xlsx, asTable = TRUE, overwrite = TRUE)
     
     # Concatenar as disciplinas em uma string separada por quebra de linha "\t"
