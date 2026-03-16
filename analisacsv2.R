@@ -117,6 +117,12 @@ namefile_xlsx <- glue("{serie_nomenclatura}_Relatorio_{Sys.Date()}.xlsx")
 pushViewport(viewport(height = 0.1, width = 1, y = 0.95))
 grid.text(glue("Relatório de Resultados - Turma {serie_nomenclatura}"), gp = gpar(fontsize = 18, fontface = "bold"))
 popViewport()
+pushViewport(viewport(height = 0.05, width = 1, y = 0.90))
+grid.text(format(Sys.time(), "%d/%m/%Y %H:%M"), 
+          x = unit(0.5, "npc"), 
+          y = unit(0.5, "npc"), 
+          gp = gpar(fontsize = 10, fontface = "bold", col = "black"))
+popViewport()
 
 img <- readPNG("/home/danilo/Downloads/amilcare/picture.png")
 grid.raster(img, x = 0.9, y = 0.95, width = unit(4, "cm"), height = unit(4, "cm"), just = c("right", "top"))
