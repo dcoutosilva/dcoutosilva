@@ -1,217 +1,207 @@
-#Author: Danilo Couto Silva danilocoutosilva@prof.educacao.sp.gov.br
-#Discribe: Analisa Arquivos CSV do Portal Educação Profissional do Ensino Técnico SEE/SP
-#Version: 2.0
-#License: GPL
+# Author: Danilo Couto Silva danilocoutosilva@prof.educacao.sp.gov.br
+# Version: 3.6 (Leitura Robusta com suporte a UTF-16 e limpeza de BOM)
 
-# Verificar se os pacotes estão carregados e instalados, se necessário..
-pacotesRequisitados <- c("tidyverse"
-                         ,"tidyr"
-                         ,"data.table"
-                         ,"gridExtra"
-                         ,"grid"
-                         ,"glue"
-                         ,"RColorBrewer"
-                         ,"stringr"
-                         ,"openxlsx"
-                         ,"png"
-                      )
+pacotes <- c("tidyverse"
+             , "data.table"
+             , "gridExtra"
+             , "grid"
+             , "glue"
+             , "stringr"
+             , "openxlsx"
+             , "png"
+             , "dplyr"
+             , "tidyr"
+             )
 
-
-for (p in pacotesRequisitados) {
-  if (!require(p, character.only = TRUE)) {
-    install.packages(p, repos="https://brieger.esalq.usp.br/CRAN/" ,dependencies = TRUE)
-  }
+for (p in pacotes) {
+  if (!require(p, character.only = TRUE)) 
+    install.packages(p, dependencies = TRUE)
   library(p, character.only = TRUE)
 }
 
+# --- 1. Configurações Iniciais ---
 ano_atual <- format(Sys.Date(), "%Y")
-# --- Configurações Iniciais ---
-bimestre <- readline(prompt = "Qual Bimestre? : ")
-serie <- readline(prompt = "Qual turma será impressa o relatório? (2/3) : ")
-# Define a nomenclatura e o caminho base
+bimestre <- readline(prompt = "Qual Bimestre? (1/2/3/4): ")
+serie <- readline(prompt = "Qual turma? (2 para 2B / 3 para 3A): ")
 serie_nomenclatura <- if (serie == "3") "3A" else "2B"
-data_path <- glue("/home/danilo/Downloads/amilcare/{ano_atual}/relatorios/{bimestre}Bimestre/{serie_nomenclatura}/{Sys.Date()}")
 
-if (!dir.exists(data_path)) dir.create(data_path, recursive = TRUE)
+data_path <- glue("/home/danilo/Downloads/amilcare/{ano_atual}/relatorios/{bimestre}Bimestre/{serie_nomenclatura}/{Sys.Date()}")
+if (!dir.exists(data_path)) 
+  dir.create(data_path, recursive = TRUE)
 setwd(data_path)
 
-# --- NOVA LÓGICA: Seleção de Pasta ---
-cat("Selecione a pasta que contém os arquivos CSV...\n")
+cat("Selecione a pasta com os arquivos CSV...\n")
 pasta_arquivos <- tcltk::tk_choose.dir(caption = "Selecione a pasta dos CSVs")
 arquivos_csv <- list.files(path = pasta_arquivos, pattern = "\\.csv$", full.names = TRUE)
 
-if (length(arquivos_csv) == 0) stop("Nenhum arquivo CSV encontrado na pasta selecionada.")
-
-# Função de processamento adaptada para receber o caminho do arquivo
-processa_arquivo_auto <- function(arquivo_csv, contador_local) {
-  dados <- read.csv(arquivo_csv, fileEncoding = 'UTF16', header = TRUE, sep = "\t")
-  dados_limpos <- dados %>% select(-matches("X.[0-9]"))
+# --- 2. Função de Processamento Robusta ---
+# --- 2. Função de Processamento Robusta (Versão Corrigida) ---
+processa_arquivo_auto <- function(arquivo_csv) {
+  cat("Processando:", basename(arquivo_csv), "\n")
   
-  atividades <- dados_limpos %>% select(-1, -2, -3)
-  iden <- dados_limpos %>% select(1, 2, 3)
+  dados <- NULL
+  encodings_para_testar <- c("UTF-16", "UTF-8", "Latin-1")
+  separadores_para_testar <- c("\t", ";", ",")
   
-  atividades <- lapply(atividades, function(x) ifelse(!is.na(x) & x == "Concluído", 1, 0))
-  atividades_df <- data.frame(atividades)
-  
-  # Uso de na.rm = TRUE para evitar NAs na soma
-  atividades_df$total_por_aluno <- rowSums(atividades_df, na.rm = TRUE)
-  atividades_df$porc_por_aluno <- glue("{round((atividades_df$total_por_aluno / length(atividades)) * 100, 1)}%")
-  
-  df <- as_tibble(cbind(data.frame(iden), atividades_df))
-  
-  if (contador_local < 1) {
-    export_dados <- select(df, 1, total_por_aluno, porc_por_aluno)
-  } else {
-    export_dados <- select(df, total_por_aluno, porc_por_aluno)
+  for (enc in encodings_para_testar) {
+    for (sep_val in separadores_para_testar) {
+      dados <- tryCatch({
+        con <- file(arquivo_csv, open = "r", encoding = enc)
+        res <- read.table(con, 
+                          header = TRUE, 
+                          sep = sep_val, 
+                          check.names = FALSE, 
+                          fill = TRUE, 
+                          stringsAsFactors = FALSE,
+                          quote = "\"",
+                          dec = ",") 
+        close(con)
+        if(ncol(res) > 1) res else NULL
+      }, error = function(e) {
+        if(exists("con")) close(con)
+        NULL
+      })
+      if(!is.null(dados)) break
+    }
+    if(!is.null(dados)) break
   }
   
-  mapeamento_cursos <- c(
-    "2_51000" = "Lógica e Linguagem de Programação",
-    "3_51006" = "Programação Mobile",
-    "3_51008" = "Programação Back-End",
-    "3_51009" = "Programação Front-End",
-    "2_51002" = "Redes e Segurança de Computadores",
-    "2_51003" = "Processos de Desenvolvimento de Software",
-    "3_9936" = "Projeto Multidisciplinar",
-    "3_51010" = "Modelagem de Banco de Dados",
-    "2_9929"  = "Carreira e Competências",
-    "3_51004" = "Inteligência Artificial",
-    "3_51001" = "Versionamento de Código"
+  if (is.null(dados) || nrow(dados) == 0) {
+    warning(paste("Arquivo ignorado:", basename(arquivo_csv)))
+    return(NULL)
+  }
+  
+  # Limpeza de BOM e caracteres especiais nos nomes das colunas
+  nomes_limpos <- iconv(names(dados), to = "ASCII//TRANSLIT")
+  names(dados) <- make.names(nomes_limpos, unique = TRUE)
+  
+  # Define a primeira coluna como Nome_Aluno
+  colnames(dados)[1] <- "Nome_Aluno"
+  
+  # Mapeamento de Disciplinas (Mantido)
+  mapeamento <- c("51000" = "Lógica", "51006" = "Mobile", "51008" = "Back-End",
+                  "51009" = "Front-End", "51002" = "Redes", "51003" = "Processos",
+                  "9936"  = "Projetos", "51010" = "Banco Dados", "9929"  = "Carreiras",
+                  "51004" = "IA", "51001" = "Versionamento")
+  
+  codigo_extraido <- str_extract(basename(arquivo_csv), "\\d{4,5}(?=\\.csv)")
+  disc_nome <- if (!is.na(codigo_extraido) && codigo_extraido %in% names(mapeamento)) {
+    mapeamento[codigo_extraido] 
+  } else {
+    basename(arquivo_csv)
+  }
+  
+  # --- Lógica de Cálculo Mesclada ---
+  # Remove colunas fantasmas geradas por erros de leitura (ex: X.1, X.2)
+  dados_limpos <- dados %>% select(-matches("^X\\.\\d+"))
+  
+  # Seleciona apenas as colunas de atividades (geralmente da 5ª em diante no relatório da SED)
+  # Se o seu CSV tiver estrutura diferente, ajuste o índice inicial (ex: 4 ou 5)
+  atividades <- dados_limpos[, 5:ncol(dados_limpos), drop = FALSE]
+  
+  # Converte "Concluído" em 1 e o restante em 0
+  atividades_binarias <- as.data.frame(lapply(atividades, function(x) {
+    ifelse(!is.na(x) & x == "Concluído", 1, 0)
+  }))
+  
+  # Calcula totais usando a lógica do seu código antigo
+  total_atividades_disciplina <- ncol(atividades_binarias)
+  soma_aluno <- rowSums(atividades_binarias, na.rm = TRUE)
+  
+  resumo <- data.frame(
+    Nome_Aluno = dados$Nome_Aluno,
+    total = soma_aluno,
+    porc = paste0(round((soma_aluno / total_atividades_disciplina) * 100, 1), "%"),
+    stringsAsFactors = FALSE
   )
   
-  codigo <- str_extract(basename(arquivo_csv), "[23]_\\d{4,5}(?=\\.csv)")
-  arquivo_nome <- if (!is.na(codigo) && codigo %in% names(mapeamento_cursos)) mapeamento_cursos[codigo] else basename(arquivo_csv)
-  
-  list(export_dados = export_dados, arquivo_nome = unname(arquivo_nome))
+  colnames(resumo)[2:3] <- c(glue("Total_{disc_nome}"), glue("%_{disc_nome}"))
+  return(list(export_dados = resumo, arquivo_nome = disc_nome))
 }
 
-resultados_lista <- list()
-titulos_lista <- c()
+# --- 3. Execução e Combinação de Dados ---
+lista_bruta <- Filter(Negate(is.null), lapply(arquivos_csv, processa_arquivo_auto))
 
-# Loop automático pelos arquivos encontrados
-for (i in seq_along(arquivos_csv)) {
-  res <- processa_arquivo_auto(arquivos_csv[i], i-1)
-  resultados_lista[[i]] <- res$export_dados
-  titulos_lista[i] <- res$arquivo_nome
+if (length(lista_bruta) == 0) {
+  stop("Nenhum dado processado. Verifique os arquivos CSV.")
 }
 
-# Combinação e Cálculos Finais
-resultados_combinados <- do.call(cbind, resultados_lista)
-colnames(resultados_combinados) <- make.unique(colnames(resultados_combinados))
+resultados_lista <- lapply(lista_bruta, `[[`, "export_dados")
+titulos_lista <- sapply(lista_bruta, `[[`, "arquivo_nome")
 
-# Soma total com tratamento de NA
-resultados_combinados$total_atividades_concluidas <- rowSums(
-  resultados_combinados[, grepl("total_por_aluno", colnames(resultados_combinados))], 
-  na.rm = TRUE
-)
+resultados_combinados <- Reduce(function(x, y) full_join(x, y, by = "Nome_Aluno"), resultados_lista)
 
-resultados_combinados <- resultados_combinados %>% arrange_at(1)
-top_alunos <- resultados_combinados %>% select(1, total_atividades_concluidas)
+if (is.null(resultados_combinados)) {
+  stop("Erro ao combinar tabelas.")
+}
 
-# --- Geração do PDF ---
+# Limpeza de NAs e formatação final
+resultados_combinados <- resultados_combinados %>%
+  mutate(across(where(is.numeric), ~replace_na(.x, 0))) %>%
+  mutate(across(where(is.character), ~replace_na(.x, "0%")))
+
+resultados_combinados$`Total de Atividades Concluídas` <- resultados_combinados %>%
+  select(starts_with("Total_")) %>% rowSums(na.rm = TRUE)
+
+resultados_combinados <- resultados_combinados %>% arrange(Nome_Aluno)
+
+# --- 4. Geração do PDF ---
 namefile_pdf <- glue("{serie_nomenclatura}_Relatorio_{Sys.Date()}.pdf")
-pdf(namefile_pdf, height = 15, width = 25, paper = "special")
-namefile_xlsx <- glue("{serie_nomenclatura}_Relatorio_{Sys.Date()}.xlsx")
+pdf(namefile_pdf, height = 15, width = 25)
 
-# Página 1: Título e Logo
+# PÁGINA 1: Tabela
+grid.newpage()
 pushViewport(viewport(height = 0.1, width = 1, y = 0.95))
-grid.text(glue("Relatório de Resultados - Turma {serie_nomenclatura}"), gp = gpar(fontsize = 18, fontface = "bold"))
+grid.text(glue("Relatório de Resultados - Turma {serie_nomenclatura}"), 
+          gp = gpar(fontsize = 26, fontface = "bold"))
 popViewport()
-pushViewport(viewport(height = 0.05, width = 1, y = 0.90))
+
+pushViewport(viewport(height = 0.05, width = 1, y = 0.91))
 grid.text(format(Sys.time(), "%d/%m/%Y %H:%M"), 
-          x = unit(0.5, "npc"), 
-          y = unit(0.5, "npc"), 
-          gp = gpar(fontsize = 10, fontface = "bold", col = "black"))
+          gp = gpar(fontsize = 14, fontface = "italic"))
 popViewport()
 
-img <- readPNG("/home/danilo/Downloads/amilcare/picture.png")
-grid.raster(img, x = 0.9, y = 0.95, width = unit(4, "cm"), height = unit(4, "cm"), just = c("right", "top"))
+if(file.exists("/home/danilo/Downloads/amilcare/picture.png")){
+  img <- readPNG("/home/danilo/Downloads/amilcare/picture.png")
+  grid.raster(img, x = 0.9, y = 0.95, width = unit(4, "cm"), 
+              height = unit(4, "cm"), just = c("right", "top"))
+}
 
-# Formatação da Tabela
 dados_exibicao <- resultados_combinados
-col_totais <- grepl("total_por_aluno", colnames(dados_exibicao))
-col_porc <- grepl("porc_por_aluno", colnames(dados_exibicao))
+colnames(dados_exibicao)[grepl("^Total_", colnames(dados_exibicao))] <- str_wrap(titulos_lista, width = 15)
+colnames(dados_exibicao)[grepl("^%_", colnames(dados_exibicao))] <- "%"
 
-# Quebra de linha nos nomes das disciplinas (cabeçalho)
-colnames(dados_exibicao)[col_totais] <- str_wrap(titulos_lista, width = 15)
-colnames(dados_exibicao)[col_porc] <- "%"
-
-tema_base <- ttheme_minimal(
-  core = list(bg_params = list(fill = blues9[1:5], col = NA), fg_params = list(fontsize = 9)),
-  colhead = list(fg_params = list(col = "navyblue", fontface = 4, fontsize = 10, lineheight = 0.8))
-)
-
-# Cálculo de escala para caber na página
-tab_teste <- tableGrob(dados_exibicao, theme = tema_base)
-largura_p <- convertWidth(sum(tab_teste$widths), "inches", valueOnly = TRUE)
-escala <- if (largura_p > 23) 23 / largura_p else 1
+tema_base <- ttheme_minimal(core=list(fg_params=list(fontsize=11)), 
+                            colhead=list(fg_params=list(fontsize=13, fontface="bold")))
+largura_p <- convertWidth(sum(tableGrob(dados_exibicao, theme = tema_base)$widths), "inches", valueOnly = TRUE)
+escala <- if (largura_p > 23) 23 / largura_p else 1.5
 
 tema_final <- ttheme_minimal(
-  core = list(bg_params = list(fill = blues9[1:5], col = NA), fg_params = list(fontsize = 9 * escala)),
-  colhead = list(fg_params = list(col = "navyblue", fontface = 4, fontsize = 10 * escala, lineheight = 0.8))
+  core = list(bg_params = list(fill = blues9[1:5], col = "white"), fg_params = list(fontsize = 10 * escala)),
+  colhead = list(fg_params = list(col = "navyblue", fontface = 4, fontsize = 12 * escala, lineheight = 0.8))
 )
 
+pushViewport(viewport(y = 0.45, width = 0.98, height = 0.8))
 grid.draw(tableGrob(dados_exibicao, theme = tema_final))
-write.xlsx(resultados_combinados, file = namefile_xlsx, asTable = TRUE, overwrite = TRUE)
+popViewport()
 
+# PÁGINA 2: Gráfico
+media_val <- mean(resultados_combinados$`Total de Atividades Concluídas`, na.rm = TRUE)
 
-plot_bar <- function(data, title) {
-  media <- mean(resultados_combinados$total_atividades_concluidas)
-  
-  # Cria o grafico.
-  ggplot(data,
-         aes(x = reorder(data[[1]],
-                         total_atividades_concluidas),
-             y = total_atividades_concluidas)) +
-    geom_bar(stat = "identity",
-             fill = "steelblue",
-             color = "black",
-             width = 0.7) +
-    geom_hline(yintercept = media,
-               color = "red",
-               linetype = "dashed",
-               size = 1) +
-    geom_text(aes
-              (label = total_atividades_concluidas),
-              vjust = -0.5, 
-              color = "black", 
-              size = 3.5) +
-    labs(
-      title = title,
-      x = "Aluno",
-      y = "Total de Atividades Concluídas"
-    ) +
-    theme_minimal(base_size = 12) +  # Tema simples e agradável
-    theme(
-      plot.title = element_text(hjust = 0.5,
-                                size = 14, 
-                                face = "bold"),  # Centralizar e destacar o título
-      axis.text.x = element_text(size = 15,
-                                 angle = 90,
-                                 hjust = 1),  # Nome do aluno com orientação 90 graus
-      axis.title.x = element_text(size = 12),
-      axis.title.y = element_text(size = 12)
-    )      +
-    annotate("text", 
-             x = mean(seq_along(data[[1]])), #seq_along semelhante a enumerate
-             y = media,#altura de acordo com a media
-             label = sprintf("Média: %.1f", media), 
-             hjust =0.5, vjust = -1, #centraliza a label horinz e vertical
-             color = "red", size = 8, fontface = "italic")
-}
+plot_top <- ggplot(resultados_combinados, aes(x = reorder(Nome_Aluno, `Total de Atividades Concluídas`), y = `Total de Atividades Concluídas`)) +
+  geom_bar(stat = "identity", fill = "steelblue", color = "black") +
+  geom_hline(yintercept = media_val, color = "red", linetype = "dashed", linewidth = 1.2) +
+  geom_text(aes(label = `Total de Atividades Concluídas`), vjust = -0.5, size = 5) +
+  annotate("label", x = Inf, y = media_val, label = sprintf("Média: %.1f", media_val), 
+           color = "white", fill = "red", fontface = "bold", size = 6, hjust = 1.1) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5)) +
+  labs(title = "Desempenho Total de Atividades por Aluno", x = "Aluno", y = "Total de Atividades Concluídas")
 
-#Criar gráficos para os top e bottom alunos
-plot_top <- plot_bar(top_alunos, "Quantidade Total / Aluno")
-#plot_bottom <- plot_bar(bottom_alunos, "15 Alunos com menos Atividades")
-
-#grid.newpage()
-grid.arrange(plot_top 
-             #plot_bottom, 
-             #ncol=2
-)
-
-# Fecha o dispositivo gráfico
+print(plot_top)
 dev.off()
 
-system(glue("open '{namefile_pdf}'"))
-system(glue("open '{namefile_xlsx}'"))
+# --- 5. Finalização ---
+write.xlsx(resultados_combinados, glue("{serie_nomenclatura}_Relatorio_{Sys.Date()}.xlsx"))
+system(glue("xdg-open '{namefile_pdf}'"))
