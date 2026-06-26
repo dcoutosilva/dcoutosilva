@@ -34,8 +34,7 @@ cat("Selecione a pasta com os arquivos CSV...\n")
 pasta_arquivos <- tcltk::tk_choose.dir(caption = "Selecione a pasta dos CSVs")
 arquivos_csv <- list.files(path = pasta_arquivos, pattern = "\\.csv$", full.names = TRUE)
 
-# --- 2. Função de Processamento Robusta ---
-# --- 2. Função de Processamento Robusta (Versão Corrigida) ---
+#----------------------------------------------------------------------------------#
 processa_arquivo_auto <- function(arquivo_csv) {
   cat("Processando:", basename(arquivo_csv), "\n")
   
@@ -75,14 +74,20 @@ processa_arquivo_auto <- function(arquivo_csv) {
   nomes_limpos <- iconv(names(dados), to = "ASCII//TRANSLIT")
   names(dados) <- make.names(nomes_limpos, unique = TRUE)
   
-  # Define a primeira coluna como Nome_Aluno
   colnames(dados)[1] <- "Nome_Aluno"
   
-  # Mapeamento de Disciplinas (Mantido)
-  mapeamento <- c("51000" = "Lógica", "51006" = "Mobile", "51008" = "Back-End",
-                  "51009" = "Front-End", "51002" = "Redes", "51003" = "Processos",
-                  "9936"  = "Projetos", "51010" = "Banco Dados", "9929"  = "Carreiras",
-                  "51004" = "IA", "51001" = "Versionamento")
+  # Mapeamento de Disciplinas 
+  mapeamento <- c(  "51000" = "Lógica"
+                  , "51006" = "Mobile"
+                  , "51008" = "Back-End"
+                  , "51009" = "Front-End"
+                  , "51002" = "Redes"
+                  , "51003" = "Processos"
+                  , "9936"  = "Projetos"
+                  , "51010" = "Banco de Dados"
+                  , "9929"  = "Carreiras"
+                  , "51004" = "IA"
+                  , "51001" = "Versionamento")
   
   codigo_extraido <- str_extract(basename(arquivo_csv), "\\d{4,5}(?=\\.csv)")
   disc_nome <- if (!is.na(codigo_extraido) && codigo_extraido %in% names(mapeamento)) {
@@ -91,7 +96,6 @@ processa_arquivo_auto <- function(arquivo_csv) {
     basename(arquivo_csv)
   }
   
-  # --- Lógica de Cálculo Mesclada ---
   # Remove colunas fantasmas geradas por erros de leitura (ex: X.1, X.2)
   dados_limpos <- dados %>% select(-matches("^X\\.\\d+"))
   
@@ -104,7 +108,6 @@ processa_arquivo_auto <- function(arquivo_csv) {
     ifelse(!is.na(x) & x == "Concluído", 1, 0)
   }))
   
-  # Calcula totais usando a lógica do seu código antigo
   total_atividades_disciplina <- ncol(atividades_binarias)
   soma_aluno <- rowSums(atividades_binarias, na.rm = TRUE)
   
@@ -119,7 +122,6 @@ processa_arquivo_auto <- function(arquivo_csv) {
   return(list(export_dados = resumo, arquivo_nome = disc_nome))
 }
 
-# --- 3. Execução e Combinação de Dados ---
 lista_bruta <- Filter(Negate(is.null), lapply(arquivos_csv, processa_arquivo_auto))
 
 if (length(lista_bruta) == 0) {
@@ -145,7 +147,6 @@ resultados_combinados$`Total de Atividades Concluídas` <- resultados_combinados
 
 resultados_combinados <- resultados_combinados %>% arrange(Nome_Aluno)
 
-# --- 4. Geração do PDF ---
 namefile_pdf <- glue("{serie_nomenclatura}_Relatorio_{Sys.Date()}.pdf")
 pdf(namefile_pdf, height = 15, width = 25)
 
@@ -188,7 +189,9 @@ popViewport()
 # PÁGINA 2: Gráfico
 media_val <- mean(resultados_combinados$`Total de Atividades Concluídas`, na.rm = TRUE)
 
-plot_top <- ggplot(resultados_combinados, aes(x = reorder(Nome_Aluno, `Total de Atividades Concluídas`), y = `Total de Atividades Concluídas`)) +
+plot_top <- ggplot(resultados_combinados, 
+                   aes(x = reorder(Nome_Aluno, `Total de Atividades Concluídas`), 
+                       y = `Total de Atividades Concluídas`)) +
   geom_bar(stat = "identity", fill = "steelblue", color = "black") +
   geom_hline(yintercept = media_val, color = "red", linetype = "dashed", linewidth = 1.2) +
   geom_text(aes(label = `Total de Atividades Concluídas`), vjust = -0.5, size = 5) +
@@ -202,6 +205,5 @@ plot_top <- ggplot(resultados_combinados, aes(x = reorder(Nome_Aluno, `Total de 
 print(plot_top)
 dev.off()
 
-# --- 5. Finalização ---
 write.xlsx(resultados_combinados, glue("{serie_nomenclatura}_Relatorio_{Sys.Date()}.xlsx"))
 system(glue("xdg-open '{namefile_pdf}'"))
